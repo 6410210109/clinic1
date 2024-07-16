@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "react-data-table-component": "^7.6.2"
+    "react-data-table-component": "^7.6.2",
+    "recharts": "^2.12.7"
   }
 }
