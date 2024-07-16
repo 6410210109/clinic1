@@ -22,9 +22,21 @@ const Queue = () => {
     [navigate]
   );
 
-  const handleDelete = useCallback((row) => {
-    console.log("Delete clicked for row:", row);
-    // เพิ่มโค้ดการลบข้อมูล
+  const handleDelete = useCallback(async (row) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/patient_details/${row.patient_id}`
+      );
+      console.log("Delete successful for row:", row);
+
+      // ลบแถวที่ถูกลบออกจาก state ของข้อมูล
+      setData((prevData) =>
+        prevData.filter((item) => item.patient_id !== row.patient_id)
+      );
+    } catch (error) {
+      console.error("Error deleting row:", row, error);
+      // จัดการเมื่อเกิดข้อผิดพลาดในการลบ
+    }
   }, []);
 
   const columns = [

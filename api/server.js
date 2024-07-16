@@ -109,6 +109,19 @@ app.post("/patient/users", function (req, res) {
   );
 });
 
+// API for deleting patient details
+app.delete("/api/patient_details/:patient_id", function (req, res) {
+  const patientId = req.params.patient_id;
+  const sql = "DELETE FROM patient_details WHERE patient_id = ?";
+
+  connection.execute(sql, [patientId], function (err, results, fields) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ success: true });
+  });
+});
+
 app.listen(5000, function () {
   console.log("CORS-enabled web server listening on port 5000");
 });
