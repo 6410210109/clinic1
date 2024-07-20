@@ -82,6 +82,72 @@ app.get("/api/patient_details", function (req, res, next) {
   });
 });
 
+app.get("/api/queue", function (req, res, next) {
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_column = req.query.sort_column;
+  const sort_direction = req.query.sort_direction;
+  const HN = req.query.HN || "";
+  const first_name = req.query.first_name || "";
+  const last_name = req.query.last_name || "";
+
+  const start_idx = (page - 1) * per_page;
+  var params = [];
+  var sql = "SELECT * FROM queue WHERE 1=1";
+
+  if (HN) {
+    sql += " AND HN LIKE ?";
+    params.push("%" + HN + "%");
+  }
+  if (first_name) {
+    sql += " AND first_name LIKE ?";
+    params.push("%" + first_name + "%");
+  }
+  if (last_name) {
+    sql += " AND last_name LIKE ?";
+    params.push("%" + last_name + "%");
+  }
+  if (sort_column) {
+    sql += " ORDER BY " + sort_column + " " + sort_direction;
+  }
+  sql += " LIMIT ?, ?";
+  params.push(start_idx);
+  params.push(per_page);
+
+  connection.execute(sql, params, function (err, results, fields) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    console.log(results); // results contains rows returned by server
+
+    // simple query
+    connection.query(
+      "SELECT count(queue_no) as total FROM queue WHERE 1=1" +
+        (HN ? " AND HN LIKE ?" : "") +
+        (first_name ? " AND first_name LIKE ?" : "") +
+        (last_name ? " AND last_name LIKE ?" : ""),
+      params.filter((_, index) => index < params.length - 2), // Filter params to match the total count query
+      function (err, count, fields) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        if (!count || count.length === 0) {
+          return res.status(500).json({ error: "No count result" });
+        }
+        const total = count[0]["total"];
+        const total_pages = Math.ceil(total / per_page);
+        res.json({
+          page: page,
+          per_page: per_page,
+          total: total,
+          total_pages: total_pages,
+          data: results,
+        });
+      }
+    );
+  });
+});
+
 // Generate a simple token
 function generateToken() {
   return crypto.randomBytes(16).toString("hex");

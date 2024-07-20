@@ -2,6 +2,7 @@ import "./App.css";
 import Signin from "./Signin";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Queue from "./Queue";
+import Queue2 from "./Queue2";
 import OrderPay from "./OrderPay";
 import Bill from "./Bill";
 import HeaderBar from "./layouts/HeaderBar";
@@ -23,7 +24,7 @@ function App() {
         <HeaderBar />
         <Routes>
           <Route path="/" element={<DDashboard />} />
-          <Route path="queue" element={<Queue />} />
+          <Route path="queue" element={<Queue2 />} />
           <Route path="orderpay" element={<OrderPay />} />
           <Route path="bill" element={<Bill />} />
           <Route path="dashboard" element={<Dashboard />} />
