@@ -1,5 +1,5 @@
 import DataTable from "react-data-table-component";
-import { useState, useEffect, navigate, useCallback } from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -24,20 +24,17 @@ const Queue = () => {
 
   const handleDelete = useCallback(async (row) => {
     try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/patient_details/${row.patient_id}`
-      );
+      const response = await axios.delete(`http://localhost:5000/api/patient_details/${row.patient_id}`);
       console.log("Delete successful for row:", row);
-
+  
       // ลบแถวที่ถูกลบออกจาก state ของข้อมูล
-      setData((prevData) =>
-        prevData.filter((item) => item.patient_id !== row.patient_id)
-      );
+      setData(prevData => prevData.filter(item => item.patient_id !== row.patient_id));
     } catch (error) {
       console.error("Error deleting row:", row, error);
       // จัดการเมื่อเกิดข้อผิดพลาดในการลบ
     }
   }, []);
+  
 
   const columns = [
     {
