@@ -191,11 +191,12 @@ app.post("/patient/users", function (req, res) {
 });
 
 // API for deleting patient details
-app.delete("/api/patient_details/:patient_id", function (req, res) {
-  const patientId = req.params.patient_id;
-  const sql = "DELETE FROM patient_details WHERE patient_id = ?";
+// API for deleting patient details
+app.delete("/api/queue/:queue_no", function (req, res) {
+  const queueNo = req.params.queue_no;
+  const sql = "DELETE FROM queue WHERE queue_no = ?";
 
-  connection.execute(sql, [patientId], function (err, results, fields) {
+  connection.execute(sql, [queueNo], function (err, results, fields) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }

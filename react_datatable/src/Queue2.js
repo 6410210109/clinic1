@@ -1,10 +1,10 @@
 import DataTable from "react-data-table-component";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Queue2 = () => {
-  const [data, setData] = useState(null); // Set initial state to null
+  const [data, setData] = useState([]); // Initial state set to empty array
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
   const [page, setPage] = useState(1);
@@ -16,6 +16,32 @@ const Queue2 = () => {
   const [searchLastName, setSearchLastName] = useState("");
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
+
+  const handleView = useCallback(
+    (row) => {
+      console.log("View clicked for row:", row);
+      navigate("/orderpay", { state: { patient: row } });
+    },
+    [navigate]
+  );
+
+  const handleDelete = useCallback(async (row) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/queue/${row.queue_no}`
+      );
+      console.log("Delete successful for row:", row);
+  
+      // ลบแถวที่ถูกลบออกจาก state ของข้อมูล
+      setData((prevData) =>
+        prevData.filter((item) => item.queue_no !== row.queue_no)
+      );
+    } catch (error) {
+      console.error("Error deleting row:", row, error);
+      // จัดการเมื่อเกิดข้อผิดพลาดในการลบ
+    }
+  }, []);
+  
 
   const columns = [
     {
@@ -48,6 +74,16 @@ const Queue2 = () => {
       sortable: true,
       width: "200px",
     },
+    {
+      name: "Action",
+      width: "200px",
+      cell: (row) => (
+        <div>
+          <button onClick={() => handleView(row)}>View</button>
+          <button onClick={() => handleDelete(row)}>Delete</button>
+        </div>
+      ),
+    },
   ];
 
   const fetchData = async () => {
@@ -67,31 +103,30 @@ const Queue2 = () => {
       url += `&sort_column=${sortColumn}&sort_direction=${sortColumnDir}`;
     }
 
-    const response = await axios.get(url);
+    try {
+      const response = await axios.get(url);
 
-    setData(response.data.data);
-    setTotalRows(response.data.total);
-    setLoading(false);
+      setData(response.data.data);
+      setTotalRows(response.data.total);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePageChange = (page) => {
     setPage(page);
   };
 
-  const handlePerRowsChange = async (newPerPage, page) => {
+  const handlePerRowsChange = (newPerPage, page) => {
     setPerPage(newPerPage);
     setPage(page);
-    if (searchHN || searchFirstName || searchLastName) {
-      fetchData();
-    }
   };
 
   const handleSort = (column, sortDirection) => {
     setSortColumn(column.selector);
     setSortColumnDir(sortDirection);
-    if (searchHN || searchFirstName || searchLastName) {
-      fetchData();
-    }
   };
 
   const handleSearchHNChange = (event) => {
@@ -108,8 +143,12 @@ const Queue2 = () => {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    fetchData(); // Only fetch data when submitting
+    fetchData(); // Fetch data on search submit
   };
+
+  useEffect(() => {
+    fetchData(); // Fetch data initially and on dependencies change
+  }, [page, perPage, sortColumn, sortColumnDir]);
 
   return (
     <div>
@@ -136,21 +175,18 @@ const Queue2 = () => {
         </label>
         <input type="submit" value="Submit" />
       </form>
-      {/* Render table only if data is not null */}
-      {data !== null && (
-        <DataTable
-          title={<h3 style={{ textAlign: "center" }}>คิว</h3>}
-          columns={columns}
-          data={data}
-          progressPending={loading}
-          pagination
-          paginationServer
-          paginationTotalRows={totalRows}
-          onChangeRowsPerPage={handlePerRowsChange}
-          onChangePage={handlePageChange}
-          onSort={handleSort}
-        />
-      )}
+      <DataTable
+        title={<h3 style={{ textAlign: "center" }}>คิว</h3>}
+        columns={columns}
+        data={data}
+        progressPending={loading}
+        pagination
+        paginationServer
+        paginationTotalRows={totalRows}
+        onChangeRowsPerPage={handlePerRowsChange}
+        onChangePage={handlePageChange}
+        onSort={handleSort}
+      />
     </div>
   );
 };
