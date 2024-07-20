@@ -21,14 +21,25 @@ app.get("/api/patient_details", function (req, res, next) {
   const per_page = parseInt(req.query.per_page);
   const sort_column = req.query.sort_column;
   const sort_direction = req.query.sort_direction;
-  const search = req.query.search;
+  const HN = req.query.HN || "";
+  const first_name = req.query.first_name || "";
+  const last_name = req.query.last_name || "";
 
   const start_idx = (page - 1) * per_page;
   var params = [];
-  var sql = "select * from patient_details";
-  if (search) {
-    sql += " WHERE first_name LIKE ?";
-    params.push("%" + search + "%");
+  var sql = "SELECT * FROM patient_details WHERE 1=1";
+
+  if (HN) {
+    sql += " AND HN LIKE ?";
+    params.push("%" + HN + "%");
+  }
+  if (first_name) {
+    sql += " AND first_name LIKE ?";
+    params.push("%" + first_name + "%");
+  }
+  if (last_name) {
+    sql += " AND last_name LIKE ?";
+    params.push("%" + last_name + "%");
   }
   if (sort_column) {
     sql += " ORDER BY " + sort_column + " " + sort_direction;
@@ -36,7 +47,7 @@ app.get("/api/patient_details", function (req, res, next) {
   sql += " LIMIT ?, ?";
   params.push(start_idx);
   params.push(per_page);
-  console.log(sql, params);
+
   connection.execute(sql, params, function (err, results, fields) {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -45,7 +56,11 @@ app.get("/api/patient_details", function (req, res, next) {
 
     // simple query
     connection.query(
-      "SELECT count(patient_id) as total from patient_details",
+      "SELECT count(patient_id) as total FROM patient_details WHERE 1=1" +
+        (HN ? " AND HN LIKE ?" : "") +
+        (first_name ? " AND first_name LIKE ?" : "") +
+        (last_name ? " AND last_name LIKE ?" : ""),
+      params.filter((_, index) => index < params.length - 2), // Filter params to match the total count query
       function (err, count, fields) {
         if (err) {
           return res.status(500).json({ error: err.message });

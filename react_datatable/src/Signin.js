@@ -35,7 +35,11 @@ export default function Signin() {
     if ("accessToken" in response) {
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("user", JSON.stringify(response.user));
-      window.location.href = "/queue";
+      if (response.user.role_id === 1) {
+        window.location.href = "/ddashboard";
+      } else if (response.user.role_id === 2) {
+        window.location.href = "/ndashboard";
+      }
     }
   };
 
