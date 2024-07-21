@@ -2,9 +2,10 @@ import DataTable from "react-data-table-component";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Modal from "react-modal"; // ใช้ library สำหรับ modal
 
 const Queue2 = () => {
-  const [data, setData] = useState([]); // Initial state set to empty array
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
   const [page, setPage] = useState(1);
@@ -14,8 +15,9 @@ const Queue2 = () => {
   const [searchHN, setSearchHN] = useState("");
   const [searchFirstName, setSearchFirstName] = useState("");
   const [searchLastName, setSearchLastName] = useState("");
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [newHN, setNewHN] = useState("");
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
 
   const handleView = useCallback(
     (row) => {
@@ -31,17 +33,41 @@ const Queue2 = () => {
         `http://localhost:5000/api/queue/${row.queue_no}`
       );
       console.log("Delete successful for row:", row);
-  
-      // ลบแถวที่ถูกลบออกจาก state ของข้อมูล
       setData((prevData) =>
         prevData.filter((item) => item.queue_no !== row.queue_no)
       );
     } catch (error) {
       console.error("Error deleting row:", row, error);
-      // จัดการเมื่อเกิดข้อผิดพลาดในการลบ
     }
   }, []);
-  
+
+  const handleAdd = () => {
+    setModalIsOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalIsOpen(false);
+  };
+
+  const handleAddHNChange = (event) => {
+    setNewHN(event.target.value);
+  };
+
+  const handleAddSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/queue/add`,
+        { HN: newHN }
+      );
+      console.log("Add successful:", response.data);
+      // รีเฟรชข้อมูลหลังจากเพิ่มสำเร็จ
+      fetchData();
+      handleModalClose();
+    } catch (error) {
+      console.error("Error adding data:", error);
+    }
+  };
 
   const columns = [
     {
@@ -88,7 +114,6 @@ const Queue2 = () => {
 
   const fetchData = async () => {
     setLoading(true);
-
     let url = `http://localhost:5000/api/queue?page=${page}&per_page=${perPage}`;
     if (searchHN) {
       url += `&HN=${searchHN}`;
@@ -102,10 +127,8 @@ const Queue2 = () => {
     if (sortColumn) {
       url += `&sort_column=${sortColumn}&sort_direction=${sortColumnDir}`;
     }
-
     try {
       const response = await axios.get(url);
-
       setData(response.data.data);
       setTotalRows(response.data.total);
     } catch (error) {
@@ -143,36 +166,17 @@ const Queue2 = () => {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    fetchData(); // Fetch data on search submit
+    fetchData();
   };
 
   useEffect(() => {
-    fetchData(); // Fetch data initially and on dependencies change
+    fetchData();
   }, [page, perPage, sortColumn, sortColumnDir]);
 
   return (
     <div>
+      <button onClick={handleAdd}>เพิ่ม</button>
       <form onSubmit={handleSearchSubmit}>
-        <label>
-          Search HN:
-          <input type="text" name="searchHN" onChange={handleSearchHNChange} />
-        </label>
-        <label>
-          Search First Name:
-          <input
-            type="text"
-            name="searchFirstName"
-            onChange={handleSearchFirstNameChange}
-          />
-        </label>
-        <label>
-          Search Last Name:
-          <input
-            type="text"
-            name="searchLastName"
-            onChange={handleSearchLastNameChange}
-          />
-        </label>
         <input type="submit" value="Submit" />
       </form>
       <DataTable
@@ -187,6 +191,27 @@ const Queue2 = () => {
         onChangePage={handlePageChange}
         onSort={handleSort}
       />
+      {/* Modal for adding new queue */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={handleModalClose}
+        contentLabel="Add Queue Modal"
+      >
+        <h2>เพิ่มคิวใหม่</h2>
+        <form onSubmit={handleAddSubmit}>
+          <label>
+            HN:
+            <input
+              type="text"
+              value={newHN}
+              onChange={handleAddHNChange}
+              required
+            />
+          </label>
+          <button type="submit">เพิ่ม</button>
+          <button type="button" onClick={handleModalClose}>ปิด</button>
+        </form>
+      </Modal>
     </div>
   );
 };

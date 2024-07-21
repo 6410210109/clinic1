@@ -16,6 +16,38 @@ const connection = mysql.createConnection({
 app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 
+// API for adding to queue
+app.post("/api/queue/add", async function (req, res) {
+  const { HN } = req.body;
+  
+  if (!HN) {
+    return res.status(400).json({ error: "HN is required" });
+  }
+
+  // ค้นหาข้อมูลผู้ป่วยที่มีหมายเลข HN ตรงกัน
+  const patientSql = "SELECT * FROM patient_details WHERE HN = ?";
+  connection.execute(patientSql, [HN], function (err, results) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const patient = results[0];
+    const queueSql = "INSERT INTO queue (HN, first_name, last_name, status) VALUES (?, ?, ?, ?)";
+    const params = [patient.HN, patient.first_name, patient.last_name, 'Pending'];
+
+    connection.execute(queueSql, params, function (err, results) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true });
+    });
+  });
+});
+
+
 app.get("/api/patient_details", function (req, res, next) {
   const page = parseInt(req.query.page);
   const per_page = parseInt(req.query.per_page);

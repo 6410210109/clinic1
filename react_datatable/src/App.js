@@ -10,6 +10,8 @@ import Dashboard from "./Dashboard";
 import Patient from "./Patient";
 import DDashboard from "./DDashboard"; // Import your new dashboard components
 import NDashboard from "./NDashboard"; // Import your new dashboard components
+import Modal from "react-modal";
+Modal.setAppElement("#root");
 
 function App() {
   const token = localStorage.getItem("accessToken");
