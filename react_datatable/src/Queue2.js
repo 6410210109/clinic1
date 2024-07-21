@@ -17,6 +17,8 @@ const Queue2 = () => {
   const [searchLastName, setSearchLastName] = useState("");
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [newHN, setNewHN] = useState("");
+  const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
   const navigate = useNavigate();
 
   const handleView = useCallback(
@@ -27,19 +29,26 @@ const Queue2 = () => {
     [navigate]
   );
 
-  const handleDelete = useCallback(async (row) => {
+  const handleDelete = (row) => {
+    setSelectedRow(row);
+    setDeleteModalIsOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedRow) return;
     try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/queue/${row.queue_no}`
+      await axios.delete(
+        `http://localhost:5000/api/queue/${selectedRow.queue_no}`
       );
-      console.log("Delete successful for row:", row);
+      console.log("Delete successful for row:", selectedRow);
       setData((prevData) =>
-        prevData.filter((item) => item.queue_no !== row.queue_no)
+        prevData.filter((item) => item.queue_no !== selectedRow.queue_no)
       );
+      setDeleteModalIsOpen(false);
     } catch (error) {
-      console.error("Error deleting row:", row, error);
+      console.error("Error deleting row:", selectedRow, error);
     }
-  }, []);
+  };
 
   const handleAdd = () => {
     setModalIsOpen(true);
@@ -60,7 +69,6 @@ const Queue2 = () => {
         HN: newHN,
       });
       console.log("Add successful:", response.data);
-      // รีเฟรชข้อมูลหลังจากเพิ่มสำเร็จ
       fetchData();
       handleModalClose();
     } catch (error) {
@@ -209,6 +217,17 @@ const Queue2 = () => {
             ปิด
           </button>
         </form>
+      </Modal>
+      {/* Modal for delete confirmation */}
+      <Modal
+        isOpen={deleteModalIsOpen}
+        onRequestClose={() => setDeleteModalIsOpen(false)}
+        contentLabel="Confirm Delete Modal"
+      >
+        <h2>ยืนยันการลบ</h2>
+        <p>คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?</p>
+        <button onClick={confirmDelete}>ลบ</button>
+        <button onClick={() => setDeleteModalIsOpen(false)}>ยกเลิก</button>
       </Modal>
     </div>
   );
