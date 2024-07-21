@@ -2,7 +2,7 @@ var express = require("express");
 var cors = require("cors");
 var app = express();
 const crypto = require("crypto");
-var bodyParser = require("body-parser"); // Import body-parser
+var bodyParser = require("body-parser");
 
 // get the client
 const mysql = require("mysql2");
@@ -19,12 +19,12 @@ app.use(bodyParser.json());
 // API for adding to queue
 app.post("/api/queue/add", async function (req, res) {
   const { HN } = req.body;
-  
+
   if (!HN) {
     return res.status(400).json({ error: "HN is required" });
   }
 
-  // ค้นหาข้อมูลผู้ป่วยที่มีหมายเลข HN ตรงกัน
+  // Find patient with the given HN
   const patientSql = "SELECT * FROM patient_details WHERE HN = ?";
   connection.execute(patientSql, [HN], function (err, results) {
     if (err) {
@@ -38,7 +38,7 @@ app.post("/api/queue/add", async function (req, res) {
     const queueSql = "INSERT INTO queue (HN, first_name, last_name, status) VALUES (?, ?, ?, ?)";
     const params = [patient.HN, patient.first_name, patient.last_name, 'Pending'];
 
-    connection.execute(queueSql, params, function (err, results) {
+    connection.execute(queueSql, params, function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -47,19 +47,19 @@ app.post("/api/queue/add", async function (req, res) {
   });
 });
 
-
-app.get("/api/patient_details", function (req, res, next) {
-  const page = parseInt(req.query.page);
-  const per_page = parseInt(req.query.per_page);
-  const sort_column = req.query.sort_column;
-  const sort_direction = req.query.sort_direction;
+// API for getting patient details with pagination and sorting
+app.get("/api/patient_details", function (req, res) {
+  const page = parseInt(req.query.page) || 1;
+  const per_page = parseInt(req.query.per_page) || 10;
+  const sort_column = req.query.sort_column || "patient_id";
+  const sort_direction = req.query.sort_direction || "ASC";
   const HN = req.query.HN || "";
   const first_name = req.query.first_name || "";
   const last_name = req.query.last_name || "";
 
   const start_idx = (page - 1) * per_page;
-  var params = [];
-  var sql = "SELECT * FROM patient_details WHERE 1=1";
+  let params = [];
+  let sql = "SELECT * FROM patient_details WHERE 1=1";
 
   if (HN) {
     sql += " AND HN LIKE ?";
@@ -73,34 +73,27 @@ app.get("/api/patient_details", function (req, res, next) {
     sql += " AND last_name LIKE ?";
     params.push("%" + last_name + "%");
   }
-  if (sort_column) {
-    sql += " ORDER BY " + sort_column + " " + sort_direction;
-  }
+  sql += ` ORDER BY ${sort_column} ${sort_direction}`;
   sql += " LIMIT ?, ?";
-  params.push(start_idx);
-  params.push(per_page);
+  params.push(start_idx, per_page);
 
-  connection.execute(sql, params, function (err, results, fields) {
+  connection.execute(sql, params, function (err, results) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    console.log(results); // results contains rows returned by server
 
-    // simple query
+    // Get total count
     connection.query(
-      "SELECT count(patient_id) as total FROM patient_details WHERE 1=1" +
+      "SELECT COUNT(patient_id) as total FROM patient_details WHERE 1=1" +
         (HN ? " AND HN LIKE ?" : "") +
         (first_name ? " AND first_name LIKE ?" : "") +
         (last_name ? " AND last_name LIKE ?" : ""),
-      params.filter((_, index) => index < params.length - 2), // Filter params to match the total count query
-      function (err, count, fields) {
+      params.slice(0, params.length - 2), // Remove LIMIT params for count query
+      function (err, countResults) {
         if (err) {
           return res.status(500).json({ error: err.message });
         }
-        if (!count || count.length === 0) {
-          return res.status(500).json({ error: "No count result" });
-        }
-        const total = count[0]["total"];
+        const total = countResults[0].total;
         const total_pages = Math.ceil(total / per_page);
         res.json({
           page: page,
@@ -114,18 +107,19 @@ app.get("/api/patient_details", function (req, res, next) {
   });
 });
 
-app.get("/api/queue", function (req, res, next) {
-  const page = parseInt(req.query.page);
-  const per_page = parseInt(req.query.per_page);
-  const sort_column = req.query.sort_column;
-  const sort_direction = req.query.sort_direction;
+// API for getting queue details with pagination and sorting
+app.get("/api/queue", function (req, res) {
+  const page = parseInt(req.query.page) || 1;
+  const per_page = parseInt(req.query.per_page) || 10;
+  const sort_column = req.query.sort_column || "queue_no";
+  const sort_direction = req.query.sort_direction || "ASC";
   const HN = req.query.HN || "";
   const first_name = req.query.first_name || "";
   const last_name = req.query.last_name || "";
 
   const start_idx = (page - 1) * per_page;
-  var params = [];
-  var sql = "SELECT * FROM queue WHERE 1=1";
+  let params = [];
+  let sql = "SELECT * FROM queue WHERE 1=1";
 
   if (HN) {
     sql += " AND HN LIKE ?";
@@ -139,34 +133,27 @@ app.get("/api/queue", function (req, res, next) {
     sql += " AND last_name LIKE ?";
     params.push("%" + last_name + "%");
   }
-  if (sort_column) {
-    sql += " ORDER BY " + sort_column + " " + sort_direction;
-  }
+  sql += ` ORDER BY ${sort_column} ${sort_direction}`;
   sql += " LIMIT ?, ?";
-  params.push(start_idx);
-  params.push(per_page);
+  params.push(start_idx, per_page);
 
-  connection.execute(sql, params, function (err, results, fields) {
+  connection.execute(sql, params, function (err, results) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    console.log(results); // results contains rows returned by server
 
-    // simple query
+    // Get total count
     connection.query(
-      "SELECT count(queue_no) as total FROM queue WHERE 1=1" +
+      "SELECT COUNT(queue_no) as total FROM queue WHERE 1=1" +
         (HN ? " AND HN LIKE ?" : "") +
         (first_name ? " AND first_name LIKE ?" : "") +
         (last_name ? " AND last_name LIKE ?" : ""),
-      params.filter((_, index) => index < params.length - 2), // Filter params to match the total count query
-      function (err, count, fields) {
+      params.slice(0, params.length - 2), // Remove LIMIT params for count query
+      function (err, countResults) {
         if (err) {
           return res.status(500).json({ error: err.message });
         }
-        if (!count || count.length === 0) {
-          return res.status(500).json({ error: "No count result" });
-        }
-        const total = count[0]["total"];
+        const total = countResults[0].total;
         const total_pages = Math.ceil(total / per_page);
         res.json({
           page: page,
@@ -198,7 +185,7 @@ app.post("/patient/users", function (req, res) {
   connection.execute(
     sql,
     [username, password],
-    function (err, results, fields) {
+    function (err, results) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -223,18 +210,56 @@ app.post("/patient/users", function (req, res) {
 });
 
 // API for deleting patient details
-// API for deleting patient details
 app.delete("/api/queue/:queue_no", function (req, res) {
   const queueNo = req.params.queue_no;
   const sql = "DELETE FROM queue WHERE queue_no = ?";
 
-  connection.execute(sql, [queueNo], function (err, results, fields) {
+  connection.execute(sql, [queueNo], function (err) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
     res.json({ success: true });
   });
 });
+
+// API for adding a new patient
+app.post("/api/patient_details", async function (req, res) {
+  const { first_name, last_name, gender, title } = req.body;
+
+  if (!first_name || !last_name || !gender || !title) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  try {
+    const hn = await generateUniqueHN();
+    const sql = "INSERT INTO patient_details (HN, first_name, last_name, gender, title, status) VALUES (?, ?, ?, ?, ?, ?)";
+    const params = [hn, first_name, last_name, gender, title, 'Active'];
+
+    connection.execute(sql, params, function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, HN: hn });
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Function to generate a unique HN
+function generateUniqueHN() {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT MAX(HN) AS maxHN FROM patient_details";
+    connection.query(sql, (err, results) => {
+      if (err) return reject(err);
+
+      let maxHN = results[0].maxHN || 0;
+      let newHN = (parseInt(maxHN) + 1).toString().padStart(6, '0');
+
+      resolve(newHN);
+    });
+  });
+}
 
 app.listen(5000, function () {
   console.log("CORS-enabled web server listening on port 5000");
