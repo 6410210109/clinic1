@@ -56,10 +56,9 @@ const Queue2 = () => {
   const handleAddSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post(
-        `http://localhost:5000/api/queue/add`,
-        { HN: newHN }
-      );
+      const response = await axios.post(`http://localhost:5000/api/queue/add`, {
+        HN: newHN,
+      });
       console.log("Add successful:", response.data);
       // รีเฟรชข้อมูลหลังจากเพิ่มสำเร็จ
       fetchData();
@@ -175,12 +174,9 @@ const Queue2 = () => {
 
   return (
     <div>
+      <h3 style={{ textAlign: "center" }}>คิว</h3>
       <button onClick={handleAdd}>เพิ่ม</button>
-      <form onSubmit={handleSearchSubmit}>
-        <input type="submit" value="Submit" />
-      </form>
       <DataTable
-        title={<h3 style={{ textAlign: "center" }}>คิว</h3>}
         columns={columns}
         data={data}
         progressPending={loading}
@@ -209,7 +205,9 @@ const Queue2 = () => {
             />
           </label>
           <button type="submit">เพิ่ม</button>
-          <button type="button" onClick={handleModalClose}>ปิด</button>
+          <button type="button" onClick={handleModalClose}>
+            ปิด
+          </button>
         </form>
       </Modal>
     </div>

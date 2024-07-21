@@ -1,5 +1,5 @@
 import DataTable from "react-data-table-component";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +21,28 @@ const Patient = () => {
   const [newTitle, setNewTitle] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+
+  const handleView = useCallback(
+    (row) => {
+      console.log("View clicked for row:", row);
+      navigate("/orderpay", { state: { patient: row } });
+    },
+    [navigate]
+  );
+
+  const handleDelete = useCallback(async (row) => {
+    try {
+      const response = await axios.delete(
+        `http://localhost:5000/api/patient_details/${row.patient_id}`
+      );
+      console.log("Delete successful for row:", row);
+      setData((prevData) =>
+        prevData.filter((item) => item.patient_id !== row.patient_id)
+      );
+    } catch (error) {
+      console.error("Error deleting row:", row, error);
+    }
+  }, []);
 
   const columns = [
     {
@@ -48,10 +70,14 @@ const Patient = () => {
       width: "300px",
     },
     {
-      name: "สถานะ",
-      selector: (row) => row.status,
-      sortable: true,
+      name: "Action",
       width: "200px",
+      cell: (row) => (
+        <div>
+          <button onClick={() => handleView(row)}>View</button>
+          <button onClick={() => handleDelete(row)}>Delete</button>
+        </div>
+      ),
     },
   ];
 
@@ -116,8 +142,10 @@ const Patient = () => {
     let uniqueHN = false;
     let newHN = "";
     while (!uniqueHN) {
-      newHN = `9${Math.floor(Math.random() * 1e8)}`.padStart(9, '0');
-      const response = await axios.get(`http://localhost:5000/api/patient_details?HN=${newHN}`);
+      newHN = `9${Math.floor(Math.random() * 1e8)}`.padStart(9, "0");
+      const response = await axios.get(
+        `http://localhost:5000/api/patient_details?HN=${newHN}`
+      );
       if (response.data.data.length === 0) {
         uniqueHN = true;
       }
@@ -137,7 +165,7 @@ const Patient = () => {
         status: "active", // Default status or change as needed
       };
 
-      await axios.post('http://localhost:5000/api/patient_details', newPatient);
+      await axios.post("http://localhost:5000/api/patient_details", newPatient);
       fetchData(); // Refresh patient data
       setShowPopup(false); // Close popup
       setMessage(""); // Clear message
@@ -153,6 +181,7 @@ const Patient = () => {
 
   return (
     <div>
+      <h3 style={{ textAlign: "center" }}>รายชื่อผู้ป่วย</h3>
       <button onClick={() => setShowPopup(true)}>เพิ่ม</button>
       <form onSubmit={handleSearchSubmit}>
         <label>
@@ -178,17 +207,19 @@ const Patient = () => {
         <input type="submit" value="Submit" />
       </form>
       {showPopup && (
-        <div style={{ 
-          position: "fixed", 
-          top: "50%", 
-          left: "50%", 
-          transform: "translate(-50%, -50%)", 
-          padding: "20px", 
-          border: "1px solid #ccc", 
-          borderRadius: "5px", 
-          backgroundColor: "#f9f9f9", 
-          zIndex: 1000
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            padding: "20px",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            backgroundColor: "#f9f9f9",
+            zIndex: 1000,
+          }}
+        >
           <h4>เพิ่มข้อมูลผู้ป่วยใหม่</h4>
           <label>
             First Name:
@@ -222,25 +253,24 @@ const Patient = () => {
               onChange={(e) => setNewTitle(e.target.value)}
             />
           </label>
-          <button onClick={handleAddPatient}>เพิ่ม</button>
+          <button onClick={handleAddPatient}>บันทึก</button>
           <button onClick={() => setShowPopup(false)}>ปิด</button>
           {message && <p>{message}</p>}
         </div>
       )}
-      {data !== null && (
-        <DataTable
-          title={<h3 style={{ textAlign: "center" }}>รายชื่อผู้ป่วย</h3>}
-          columns={columns}
-          data={data}
-          progressPending={loading}
-          pagination
-          paginationServer
-          paginationTotalRows={totalRows}
-          onChangeRowsPerPage={handlePerRowsChange}
-          onChangePage={handlePageChange}
-          onSort={handleSort}
-        />
-      )}
+      <DataTable
+        columns={columns}
+        data={data || []}
+        pagination
+        paginationServer
+        paginationTotalRows={totalRows}
+        paginationDefaultPage={page}
+        onChangeRowsPerPage={handlePerRowsChange}
+        onChangePage={handlePageChange}
+        progressPending={loading}
+        sortServer
+        onSort={handleSort}
+      />
     </div>
   );
 };

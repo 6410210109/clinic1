@@ -222,6 +222,19 @@ app.delete("/api/queue/:queue_no", function (req, res) {
   });
 });
 
+// API for deleting patient details
+app.delete("/api/patient_details/:patient_id", function (req, res) {
+  const patientId = req.params.patient_id; // Corrected from req.params.queue_no
+  const sql = "DELETE FROM patient_details WHERE patient_id = ?";
+
+  connection.execute(sql, [patientId], function (err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ success: true });
+  });
+});
+
 // API for adding a new patient
 app.post("/api/patient_details", async function (req, res) {
   const { first_name, last_name, gender, title } = req.body;
