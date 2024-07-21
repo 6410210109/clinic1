@@ -232,14 +232,25 @@ app.post("/api/patient_details", async function (req, res) {
 
   try {
     const hn = await generateUniqueHN();
-    const sql = "INSERT INTO patient_details (HN, first_name, last_name, gender, title, status) VALUES (?, ?, ?, ?, ?, ?)";
-    const params = [hn, first_name, last_name, gender, title, 'Active'];
+    const patientSql = "INSERT INTO patient_details (HN, first_name, last_name, gender, title, status) VALUES (?, ?, ?, ?, ?, ?)";
+    const patientParams = [hn, first_name, last_name, gender, title, 'Active'];
 
-    connection.execute(sql, params, function (err) {
+    connection.execute(patientSql, patientParams, function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      res.json({ success: true, HN: hn });
+
+      // Insert into queue after successfully adding patient
+      const queueSql = "INSERT INTO queue (HN, first_name, last_name, status) VALUES (?, ?, ?, ?)";
+      const queueParams = [hn, first_name, last_name, 'Pending'];
+
+      connection.execute(queueSql, queueParams, function (err) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.json({ success: true, HN: hn });
+      });
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
