@@ -21,6 +21,10 @@ const Patient = () => {
   const [newTitle, setNewTitle] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    show: false,
+    row: null,
+  });
 
   const handleView = useCallback(
     (row) => {
@@ -30,19 +34,36 @@ const Patient = () => {
     [navigate]
   );
 
-  const handleDelete = useCallback(async (row) => {
-    try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/patient_details/${row.patient_id}`
-      );
-      console.log("Delete successful for row:", row);
-      setData((prevData) =>
-        prevData.filter((item) => item.patient_id !== row.patient_id)
-      );
-    } catch (error) {
-      console.error("Error deleting row:", row, error);
-    }
+  const handleDelete = useCallback((row) => {
+    setDeleteConfirmation({
+      show: true,
+      row: row,
+    });
   }, []);
+
+  const confirmDelete = async () => {
+    if (deleteConfirmation.row) {
+      try {
+        await axios.delete(
+          `http://localhost:5000/api/patient_details/${deleteConfirmation.row.patient_id}`
+        );
+        console.log("Delete successful for row:", deleteConfirmation.row);
+        setData((prevData) =>
+          prevData.filter(
+            (item) => item.patient_id !== deleteConfirmation.row.patient_id
+          )
+        );
+      } catch (error) {
+        console.error("Error deleting row:", deleteConfirmation.row, error);
+      } finally {
+        setDeleteConfirmation({ show: false, row: null });
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmation({ show: false, row: null });
+  };
 
   const columns = [
     {
@@ -206,6 +227,27 @@ const Patient = () => {
         </label>
         <input type="submit" value="Submit" />
       </form>
+      {deleteConfirmation.show && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            padding: "20px",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            backgroundColor: "#f9f9f9",
+            zIndex: 1000,
+          }}
+        >
+          <h4>ยืนยันการลบข้อมูล</h4>
+          <p>คุณต้องการลบข้อมูลนี้หรือไม่?</p>
+          <button onClick={confirmDelete}>ยืนยัน</button>
+          <button onClick={cancelDelete}>ยกเลิก</button>
+        </div>
+      )}
+
       {showPopup && (
         <div
           style={{
