@@ -138,9 +138,9 @@ const Patient = () => {
   };
 
   const handleSort = (column, sortDirection) => {
-    setSortColumn(column.selector);
+    console.log(column);
+    setSortColumn(column.first_name);
     setSortColumnDir(sortDirection);
-    fetchData();
   };
 
   const handleSearchHNChange = (event) => {
@@ -243,7 +243,6 @@ const Patient = () => {
           onChangeRowsPerPage={handlePerRowsChange}
           onChangePage={handlePageChange}
           progressPending={loading}
-          sortServer
           onSort={handleSort}
         />
       )}

@@ -155,7 +155,8 @@ const Queue2 = () => {
   };
 
   const handleSort = (column, sortDirection) => {
-    setSortColumn(column.selector);
+    console.log(column);
+    setSortColumn(column.first_name);
     setSortColumnDir(sortDirection);
   };
 
