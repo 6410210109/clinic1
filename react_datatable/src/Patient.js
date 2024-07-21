@@ -20,6 +20,7 @@ const Patient = () => {
   const [newGender, setNewGender] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [showTable, setShowTable] = useState(false); // State for showing DataTable
   const navigate = useNavigate();
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
@@ -154,8 +155,9 @@ const Patient = () => {
     setSearchLastName(event.target.value);
   };
 
-  const handleSearchSubmit = (event) => {
+  const handleSearchSubmit = async (event) => {
     event.preventDefault();
+    setShowTable(true); // Show table when search is submitted
     fetchData();
   };
 
@@ -197,8 +199,10 @@ const Patient = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [page, perPage, sortColumn, sortColumnDir]);
+    if (showTable) {
+      fetchData();
+    }
+  }, [page, perPage, sortColumn, sortColumnDir, showTable]);
 
   return (
     <div>
@@ -227,6 +231,23 @@ const Patient = () => {
         </label>
         <input type="submit" value="Submit" />
       </form>
+
+      {showTable && (
+        <DataTable
+          columns={columns}
+          data={data || []}
+          pagination
+          paginationServer
+          paginationTotalRows={totalRows}
+          paginationDefaultPage={page}
+          onChangeRowsPerPage={handlePerRowsChange}
+          onChangePage={handlePageChange}
+          progressPending={loading}
+          sortServer
+          onSort={handleSort}
+        />
+      )}
+
       {deleteConfirmation.show && (
         <div
           style={{
@@ -300,19 +321,6 @@ const Patient = () => {
           {message && <p>{message}</p>}
         </div>
       )}
-      <DataTable
-        columns={columns}
-        data={data || []}
-        pagination
-        paginationServer
-        paginationTotalRows={totalRows}
-        paginationDefaultPage={page}
-        onChangeRowsPerPage={handlePerRowsChange}
-        onChangePage={handlePageChange}
-        progressPending={loading}
-        sortServer
-        onSort={handleSort}
-      />
     </div>
   );
 };
