@@ -34,7 +34,6 @@ function App() {
   return (
     <div className="wrapper">
       <BrowserRouter>
-        {/* แสดง HeaderBar ที่เหมาะสมตาม role ของผู้ใช้ */}
         {userRole === 1 ? <HeaderBar /> : <HeaderBar2 />}
         <Routes>
           <Route path="/" element={<DDashboard />} />
