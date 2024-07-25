@@ -15,9 +15,10 @@ import AdbIcon from "@mui/icons-material/Adb";
 import { useNavigate } from "react-router-dom";
 
 const pages = [
-  { title: "nหน้าแรก", icon: "", to: "/ndashboard" },
+  { title: "หน้าแรก", icon: "", to: "/ndashboard" },
   { title: "รายชื่อผู้ป่วย", icon: "", to: "/patient" },
   { title: "คิว", icon: "", to: "/queue" },
+  { title: "การจัดการข้อมูล", icon: "", to: "/queue" },
 ];
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
 
@@ -72,7 +73,7 @@ function HeaderBar2() {
               textDecoration: "none",
             }}
           >
-            คลินิกรุ่งเรือง
+            คลินิกรุ่งเรือง_Doctor
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>

@@ -67,12 +67,12 @@ const Patient = () => {
   };
 
   const columns = [
-    {
-      name: "คิว",
-      selector: (row) => row.patient_id,
-      sortable: true,
-      width: "100px",
-    },
+    // {
+    //   name: "คิว",
+    //   selector: (row) => row.patient_id,
+    //   sortable: true,
+    //   width: "100px",
+    // },
     {
       name: "HN",
       selector: (row) => row.HN,
