@@ -47,17 +47,12 @@ app.post("/api/queue/add", async function (req, res) {
   });
 });
 
-// API for getting patient details with pagination and sorting
+// API for getting patient details
 app.get("/api/patient_details", function (req, res) {
-  const page = parseInt(req.query.page) || 1;
-  const per_page = parseInt(req.query.per_page) || 10;
-  const sort_column = req.query.sort_column || "patient_id";
-  const sort_direction = req.query.sort_direction || "ASC";
   const HN = req.query.HN || "";
   const first_name = req.query.first_name || "";
   const last_name = req.query.last_name || "";
 
-  const start_idx = (page - 1) * per_page;
   let params = [];
   let sql = "SELECT * FROM patient_details WHERE 1=1";
 
@@ -73,51 +68,24 @@ app.get("/api/patient_details", function (req, res) {
     sql += " AND last_name LIKE ?";
     params.push("%" + last_name + "%");
   }
-  sql += ` ORDER BY ${sort_column} ${sort_direction}`;
-  sql += " LIMIT ?, ?";
-  params.push(start_idx, per_page);
 
   connection.execute(sql, params, function (err, results) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    // Get total count
-    connection.query(
-      "SELECT COUNT(patient_id) as total FROM patient_details WHERE 1=1" +
-        (HN ? " AND HN LIKE ?" : "") +
-        (first_name ? " AND first_name LIKE ?" : "") +
-        (last_name ? " AND last_name LIKE ?" : ""),
-      params.slice(0, params.length - 2), // Remove LIMIT params for count query
-      function (err, countResults) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        const total = countResults[0].total;
-        const total_pages = Math.ceil(total / per_page);
-        res.json({
-          page: page,
-          per_page: per_page,
-          total: total,
-          total_pages: total_pages,
-          data: results,
-        });
-      }
-    );
+    res.json({
+      data: results,
+    });
   });
 });
 
-// API for getting queue details with pagination and sorting
+// API for getting queue details
 app.get("/api/queue", function (req, res) {
-  const page = parseInt(req.query.page) || 1;
-  const per_page = parseInt(req.query.per_page) || 10;
-  const sort_column = req.query.sort_column || "queue_no";
-  const sort_direction = req.query.sort_direction || "ASC";
   const HN = req.query.HN || "";
   const first_name = req.query.first_name || "";
   const last_name = req.query.last_name || "";
 
-  const start_idx = (page - 1) * per_page;
   let params = [];
   let sql = "SELECT * FROM queue WHERE 1=1";
 
@@ -133,37 +101,15 @@ app.get("/api/queue", function (req, res) {
     sql += " AND last_name LIKE ?";
     params.push("%" + last_name + "%");
   }
-  sql += ` ORDER BY ${sort_column} ${sort_direction}`;
-  sql += " LIMIT ?, ?";
-  params.push(start_idx, per_page);
 
   connection.execute(sql, params, function (err, results) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    // Get total count
-    connection.query(
-      "SELECT COUNT(queue_no) as total FROM queue WHERE 1=1" +
-        (HN ? " AND HN LIKE ?" : "") +
-        (first_name ? " AND first_name LIKE ?" : "") +
-        (last_name ? " AND last_name LIKE ?" : ""),
-      params.slice(0, params.length - 2), // Remove LIMIT params for count query
-      function (err, countResults) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        const total = countResults[0].total;
-        const total_pages = Math.ceil(total / per_page);
-        res.json({
-          page: page,
-          per_page: per_page,
-          total: total,
-          total_pages: total_pages,
-          data: results,
-        });
-      }
-    );
+    res.json({
+      data: results,
+    });
   });
 });
 

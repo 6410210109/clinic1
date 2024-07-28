@@ -1,16 +1,23 @@
-import DataTable from "react-data-table-component";
+import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 
 const Patient = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [totalRows, setTotalRows] = useState(0);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const [sortColumn, setSortColumn] = useState("");
-  const [sortColumnDir, setSortColumnDir] = useState("");
+  const [data, setData] = useState([]);
   const [searchHN, setSearchHN] = useState("");
   const [searchFirstName, setSearchFirstName] = useState("");
   const [searchLastName, setSearchLastName] = useState("");
@@ -66,81 +73,26 @@ const Patient = () => {
     setDeleteConfirmation({ show: false, row: null });
   };
 
-  const columns = [
-    // {
-    //   name: "คิว",
-    //   selector: (row) => row.patient_id,
-    //   sortable: true,
-    //   width: "100px",
-    // },
-    {
-      name: "HN",
-      selector: (row) => row.HN,
-      sortable: true,
-      width: "200px",
-    },
-    {
-      name: "ชื่อ",
-      selector: (row) => row.first_name,
-      sortable: true,
-      width: "300px",
-    },
-    {
-      name: "นามสกุล",
-      selector: (row) => row.last_name,
-      sortable: true,
-      width: "300px",
-    },
-    {
-      name: "Action",
-      width: "200px",
-      cell: (row) => (
-        <div>
-          <button onClick={() => handleView(row)}>View</button>
-          <button onClick={() => handleDelete(row)}>Delete</button>
-        </div>
-      ),
-    },
-  ];
-
   const fetchData = async () => {
-    setLoading(true);
+    let url = `http://localhost:5000/api/patient_details`;
+    const params = {};
 
-    let url = `http://localhost:5000/api/patient_details?page=${page}&per_page=${perPage}`;
     if (searchHN) {
-      url += `&HN=${searchHN}`;
+      params.HN = searchHN;
     }
     if (searchFirstName) {
-      url += `&first_name=${searchFirstName}`;
+      params.first_name = searchFirstName;
     }
     if (searchLastName) {
-      url += `&last_name=${searchLastName}`;
-    }
-    if (sortColumn) {
-      url += `&sort_column=${sortColumn}&sort_direction=${sortColumnDir}`;
+      params.last_name = searchLastName;
     }
 
-    const response = await axios.get(url);
-
-    setData(response.data.data);
-    setTotalRows(response.data.total);
-    setLoading(false);
-  };
-
-  const handlePageChange = (page) => {
-    setPage(page);
-  };
-
-  const handlePerRowsChange = async (newPerPage, page) => {
-    setPerPage(newPerPage);
-    setPage(page);
-    fetchData();
-  };
-
-  const handleSort = (column, sortDirection) => {
-    console.log(column);
-    setSortColumn(column.first_name);
-    setSortColumnDir(sortDirection);
+    try {
+      const response = await axios.get(url, { params });
+      setData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
   };
 
   const handleSearchHNChange = (event) => {
@@ -161,26 +113,9 @@ const Patient = () => {
     fetchData();
   };
 
-  const generateUniqueHN = async () => {
-    let uniqueHN = false;
-    let newHN = "";
-    while (!uniqueHN) {
-      newHN = `9${Math.floor(Math.random() * 1e8)}`.padStart(9, "0");
-      const response = await axios.get(
-        `http://localhost:5000/api/patient_details?HN=${newHN}`
-      );
-      if (response.data.data.length === 0) {
-        uniqueHN = true;
-      }
-    }
-    return newHN;
-  };
-
   const handleAddPatient = async () => {
     try {
-      const hn = await generateUniqueHN();
       const newPatient = {
-        HN: hn,
         first_name: newFirstName,
         last_name: newLastName,
         gender: newGender,
@@ -202,124 +137,143 @@ const Patient = () => {
     if (showTable) {
       fetchData();
     }
-  }, [page, perPage, sortColumn, sortColumnDir, showTable]);
+  }, [showTable]);
 
   return (
     <div>
       <h3 style={{ textAlign: "center" }}>รายชื่อผู้ป่วย</h3>
-      <button onClick={() => setShowPopup(true)}>เพิ่ม</button>
+      <Button variant="contained" onClick={() => setShowPopup(true)}>
+        เพิ่ม
+      </Button>
       <form onSubmit={handleSearchSubmit}>
-        <label>
-          Search HN:
-          <input type="text" name="searchHN" onChange={handleSearchHNChange} />
-        </label>
-        <label>
-          Search First Name:
-          <input
-            type="text"
-            name="searchFirstName"
-            onChange={handleSearchFirstNameChange}
-          />
-        </label>
-        <label>
-          Search Last Name:
-          <input
-            type="text"
-            name="searchLastName"
-            onChange={handleSearchLastNameChange}
-          />
-        </label>
-        <input type="submit" value="Submit" />
+        <TextField
+          label="Search HN"
+          variant="outlined"
+          size="small"
+          onChange={handleSearchHNChange}
+        />
+        <TextField
+          label="Search First Name"
+          variant="outlined"
+          size="small"
+          onChange={handleSearchFirstNameChange}
+        />
+        <TextField
+          label="Search Last Name"
+          variant="outlined"
+          size="small"
+          onChange={handleSearchLastNameChange}
+        />
+        <Button variant="contained" type="submit">
+          Submit
+        </Button>
       </form>
 
       {showTable && (
-        <DataTable
-          columns={columns}
-          data={data || []}
-          pagination
-          paginationServer
-          paginationTotalRows={totalRows}
-          paginationDefaultPage={page}
-          onChangeRowsPerPage={handlePerRowsChange}
-          onChangePage={handlePageChange}
-          progressPending={loading}
-          onSort={handleSort}
-        />
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>HN</TableCell>
+                <TableCell align="right">ชื่อ</TableCell>
+                <TableCell align="right">นามสกุล</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.map((row) => (
+                <TableRow
+                  key={row.patient_id}
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                >
+                  <TableCell component="th" scope="row">
+                    {row.HN}
+                  </TableCell>
+                  <TableCell align="right">{row.first_name}</TableCell>
+                  <TableCell align="right">{row.last_name}</TableCell>
+                  <TableCell align="right">
+                    <Button onClick={() => handleView(row)}>View</Button>
+                    <Button onClick={() => handleDelete(row)}>Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {deleteConfirmation.show && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            padding: "20px",
-            border: "1px solid #ccc",
-            borderRadius: "5px",
-            backgroundColor: "#f9f9f9",
-            zIndex: 1000,
-          }}
-        >
-          <h4>ยืนยันการลบข้อมูล</h4>
+      <Dialog
+        open={deleteConfirmation.show}
+        onClose={cancelDelete}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"ยืนยันการลบข้อมูล"}</DialogTitle>
+        <DialogContent>
           <p>คุณต้องการลบข้อมูลนี้หรือไม่?</p>
-          <button onClick={confirmDelete}>ยืนยัน</button>
-          <button onClick={cancelDelete}>ยกเลิก</button>
-        </div>
-      )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelDelete} color="primary">
+            ยกเลิก
+          </Button>
+          <Button onClick={confirmDelete} color="primary" autoFocus>
+            ยืนยัน
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {showPopup && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            padding: "20px",
-            border: "1px solid #ccc",
-            borderRadius: "5px",
-            backgroundColor: "#f9f9f9",
-            zIndex: 1000,
-          }}
-        >
-          <h4>เพิ่มข้อมูลผู้ป่วยใหม่</h4>
-          <label>
-            First Name:
-            <input
-              type="text"
-              value={newFirstName}
-              onChange={(e) => setNewFirstName(e.target.value)}
-            />
-          </label>
-          <label>
-            Last Name:
-            <input
-              type="text"
-              value={newLastName}
-              onChange={(e) => setNewLastName(e.target.value)}
-            />
-          </label>
-          <label>
-            Gender:
-            <input
-              type="text"
-              value={newGender}
-              onChange={(e) => setNewGender(e.target.value)}
-            />
-          </label>
-          <label>
-            Title:
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-            />
-          </label>
-          <button onClick={handleAddPatient}>บันทึก</button>
-          <button onClick={() => setShowPopup(false)}>ปิด</button>
-          {message && <p>{message}</p>}
-        </div>
-      )}
+      <Dialog
+        open={showPopup}
+        onClose={() => setShowPopup(false)}
+        aria-labelledby="form-dialog-title"
+      >
+        <DialogTitle id="form-dialog-title">เพิ่มผู้ป่วยใหม่</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="ชื่อ"
+            type="text"
+            fullWidth
+            value={newFirstName}
+            onChange={(e) => setNewFirstName(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            label="นามสกุล"
+            type="text"
+            fullWidth
+            value={newLastName}
+            onChange={(e) => setNewLastName(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            label="เพศ"
+            type="text"
+            fullWidth
+            value={newGender}
+            onChange={(e) => setNewGender(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            label="คำนำหน้า"
+            type="text"
+            fullWidth
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowPopup(false)} color="primary">
+            ยกเลิก
+          </Button>
+          <Button onClick={handleAddPatient} color="primary">
+            บันทึก
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {message && <p>{message}</p>}
     </div>
   );
 };
